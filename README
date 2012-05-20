@@ -1,0 +1,7 @@
+I have a bad habit of cooking my system's paths into things. Sort that out in
+the first two shell scripts (point to the right clojure jar, basically), then:
+
+  sh dex-clojure.sh
+  sh prebuild.sh
+  ant debug
+  ant installd

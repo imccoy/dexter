@@ -1,5 +1,7 @@
 package com.fineshambles.dexter;
 
+import dexter.CljActivity;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -7,6 +9,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.lang.Thread;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Field;
 
 import android.app.Activity;
@@ -22,15 +26,52 @@ import dalvik.system.DexClassLoader;
 
 public class DexterActivity extends Activity
 {
+    private ClassLoader loader;
+    private CljActivity clj;
+
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
-        TextView text = (TextView)findViewById(R.id.textView);
+        getClj().onCreate(savedInstanceState);
+    }
+
+    protected String cljClassName() {
+        return "com.fineshambles.prebuilt.hello";
+    }
+
+    private CljActivity getClj() {
         try {
-          
+            if (clj == null) {
+                Class cljClass = getLoader().loadClass(cljClassName());
+                Constructor<CljActivity> cljClassConstructor
+                  = cljClass.getConstructor(Activity.class);
+                clj = cljClassConstructor.newInstance(this);
+            }
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Couldn't get clojureized " + cljClassName(), e);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException("Couldn't get clojureized " + cljClassName(), e);
+        } catch (InstantiationException e) {
+            throw new RuntimeException("Couldn't get clojureized " + cljClassName(), e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("Couldn't get clojureized " + cljClassName(), e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException("Couldn't get clojureized " + cljClassName(), e);
+        }
+        return clj;
+    }
+
+    private ClassLoader getLoader() {
+        if (loader == null) {
+            loader = hookUpClojure();
+        }
+        return loader;
+    }
+
+    private ClassLoader hookUpClojure() {
+        try {
             ClassLoader loader = classLoader();
             Thread.currentThread().setContextClassLoader(loader);
             Class cljRT = loader.loadClass("clojure.lang.RT");
@@ -40,12 +81,11 @@ public class DexterActivity extends Activity
                 varUseCxtLoader.get(null),
                 loader);
 
-            Class hello = loader.loadClass( "com.fineshambles.prebuilt.hello");
-            text.setText((String)hello.getDeclaredMethod("world", String.class)
-                                      .invoke(null, "working software"));
+            return loader;
         } catch (Exception ex) {
-            Log.e("Dexter", "Couldn't call Hello's world method", ex);
+            throw new RuntimeException("Couldn't hook up Clojure pieces", ex);
         }
+
     }
 
     private ClassLoader classLoader()

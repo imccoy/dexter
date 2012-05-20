@@ -3,8 +3,7 @@
       package="com.fineshambles.dexter"
       android:versionCode="1"
       android:versionName="1.0">
-      <application android:label="@string/app_name" 
-                   android:name="Dexter">
+      <application android:label="@string/app_name">
         <activity android:name="DexterActivity"
                   android:label="@string/app_name">
             <intent-filter>
